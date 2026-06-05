@@ -1,0 +1,15 @@
+:root {
+    --bg-principal: #121212;
+    --bg-tarjetas: #1e1e24;
+    --color-acento: #dc2626; /* Rojo IGNIT */
+    --texto-principal: #f3f4f6;
+    --texto-oscuro: #6b7280;
+    --fuente-global: 'Segoe UI', sans-serif;
+}
+
+body {
+    background-color: var(--bg-principal);
+    color: var(--texto-principal);
+    font-family: var(--fuente-global);
+    margin: 0;
+}

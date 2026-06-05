@@ -1,0 +1,149 @@
+/* Paleta de Colores: Carbón, Plata y Ámbar Premium */
+:root {
+    --bg-principal: #121212;      /* Negro profundo satinado */
+    --bg-tarjeta: #1e1e1e;        /* Gris carbón oscuro */
+    --bg-tarjeta-hover: #262626;  /* Contraste sutil al pasar el mouse */
+    --texto-blanco: #f5f5f7;      /* Blanco roto (estilo Apple, no encandila) */
+    --texto-mutado: #8e8e93;      /* Gris plata para descripciones secundarias */
+    --acento-ignit: #e67e22;      /* Ámbar/Bronce deportivo para llamadas a la acción */
+    --borde-sutil: #333333;       /* Líneas de división finas */
+}
+
+/* Estilos Generales */
+body {
+    background-color: var(--bg-principal);
+    color: var(--texto-blanco);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+header {
+    background-color: #0a0a0a;
+    padding: 25px;
+    text-align: center;
+    border-bottom: 1px solid var(--borde-sutil);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* Grilla del Catálogo */
+.grid-productos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 30px;
+    padding: 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Tarjetas de Componentes (Diseño Minimalista) */
+.card {
+    background: var(--bg-tarjeta);
+    border: 1px solid var(--borde-sutil);
+    padding: 24px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.card:hover {
+    background-color: var(--bg-tarjeta-hover);
+    border-color: var(--acento-ignit);
+    transform: translateY(-2px); /* Efecto sutil de elevación */
+}
+
+/* Tipografía Interna */
+.categoria {
+    color: var(--acento-ignit);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.card h3 {
+    margin: 0 0 12px 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+}
+
+.card p {
+    color: var(--texto-mutado);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0 0 20px 0;
+}
+
+/* Precios y Stock sin colores chillones */
+.precio {
+    color: var(--texto-blanco) !important;
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin-bottom: 4px !important;
+}
+
+.stock {
+    font-size: 0.85rem !important;
+    color: var(--texto-mutado) !important;
+    margin-bottom: 20px !important;
+}
+
+/* Botón de Acción Elegante */
+.btn-carrito {
+    background: transparent;
+    color: var(--texto-blanco);
+    border: 1px solid var(--texto-blanco);
+    padding: 12px;
+    width: 100%;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-carrito:hover {
+    background: var(--texto-blanco);
+    color: var(--bg-principal);
+}
+/* Contenedor de la foto de la pieza */
+.contenedor-img {
+    width: 100%;
+    height: 180px; /* Altura fija para mantener simetría */
+    background-color: #151515;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    border: 1px solid var(--borde-sutil);
+}
+
+.contenedor-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Centra y recorta la foto perfectamente sin deformarla */
+    transition: transform 0.3s ease;
+}
+
+/* Efecto de zoom sutil en la pieza al pasar el mouse por la tarjeta */
+.card:hover .contenedor-img img {
+    transform: scale(1.05);
+}
+
+.info-producto {
+    flex-grow: 1; /* Empuja los precios y botones hacia abajo de forma uniforme */
+}
