@@ -21,14 +21,14 @@ creacion y visualizacion del catalogo
 Con pequeñas animaciones visuales con hovers al poner el mouse ensima de un producto
 
 ## IDEAS FUTURAS
--Enviar notificaciones de cuando se registre un pago 
+-Enviar notificaciones de cuando se registre un pago [Realizado]
 
--Enviar notificacion cuado se registre por primera ves una persona 
+-Enviar notificacion cuado se registre por primera ves una persona [Realizado]
 
--Levantar servidor casero
+-Levantar servidor casero [Pendiente]
 
--Utilizar Docker 
+-Utilizar Docker [Pendiente]
 
--Cambiar colores
+-Cambiar colores [Pendiente]
 
--SSL TLS 
+-SSL TLS [Proceso]

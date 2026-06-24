@@ -1,7 +1,7 @@
 <?php
 class Conexion {
     // Apunta a tu propia máquina para que PHP encuentre MariaDB
-    private $host = "127.0.0.1"; 
+    private $host = "localhost"; 
     private $db_name = "proyecto";
     private $username = "Eadmin"; // Tu usuario sin el "trador"
     private $password = "12345";   // Tu contraseña

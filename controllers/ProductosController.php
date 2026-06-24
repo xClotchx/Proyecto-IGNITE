@@ -1,15 +1,15 @@
 <?php
+// Carga del autoloader de Composer desde la raíz
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+
 require_once 'models/ProductoModel.php';
+require_once 'models/PedidoModel.php';
 
 class ProductosController {
 
     public function mostrarCatalogo() {
         $productoModel = new ProductoModel();
-        
-        // 1. Traemos los datos crudos de la base de datos (los que viste en pantalla)
         $productosRaw = $productoModel->obtenerTodos();
-        
-        // 2. Mapeamos los datos para que coincidan con las llaves que usa tu vista catalogo.php
         $productos = [];
         foreach ($productosRaw as $prod) {
             $productos[] = [
@@ -22,8 +22,100 @@ class ProductosController {
                 'imagen' => $prod['imagen'] ?? 'default.jpg'
             ];
         }
+        require_once dirname(__DIR__) . '/views/catalogo.php';
+    }
 
-        // 3. Cargamos la vista de forma limpia
-        require_once 'views/catalogo.php';
+    public function mostrarCarrito() {
+        $productoModel = new ProductoModel();
+        $productos_carrito = [];
+        if (isset($_SESSION['carrito']) && !empty($_SESSION['carrito'])) {
+            foreach ($_SESSION['carrito'] as $id_producto => $cantidad) {
+                $prod = $productoModel->buscarPorId($id_producto);
+                if ($prod) {
+                    $productos_carrito[] = [
+                        'id' => $prod['id_producto'],
+                        'nombre' => $prod['nombre'],
+                        'precio' => $prod['precio'],
+                        'cantidad' => $cantidad,
+                        'categoria' => $prod['nombre_categoria'] ?? 'Sin Categoría'
+                    ];
+                }
+            }
+        }
+        require_once dirname(__DIR__) . '/views/carrito.php';
+    }
+
+    public function finalizarCompra() {
+        if (!isset($_SESSION['usuario_id'])) {
+            header('Location: index.php?action=login');
+            exit();
+        }
+
+        $productoModel = new ProductoModel();
+        
+        try {
+            // 1. DESCONTAR STOCK
+            foreach ($_SESSION['carrito'] as $id_producto => $cantidad) {
+                if (!$productoModel->disminuirStock($id_producto, $cantidad)) {
+                    throw new Exception("Stock insuficiente para el ID: $id_producto");
+                }
+            }
+
+            // 2. GENERAR PDF - Usamos \ (backslash) para evitar errores del editor
+            $options = new \Dompdf\Options();
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('isRemoteEnabled', true);
+            
+            $dompdf = new \Dompdf\Dompdf($options);
+            
+            ob_start();
+            $items = $_SESSION['carrito'];
+            require dirname(__DIR__) . '/views/factura_template.php'; 
+            $html = ob_get_clean();
+            
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+            $pdfOutput = $dompdf->output();
+
+            // 3. ENVIAR EMAIL
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'clotchproyectos@gmail.com'; 
+            $mail->Password   = 'mknbuhhuiqgojwtr'; 
+            $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+            $mail->CharSet    = 'UTF-8';
+
+            $mail->setFrom('clotchproyectos@gmail.com', 'IGNIT Performance');
+            $mail->addAddress($_SESSION['usuario_email']); 
+            $mail->addStringAttachment($pdfOutput, 'Factura_IGNIT.pdf', 'base64', 'application/pdf');
+
+            $mail->isHTML(true);
+            $mail->Subject = 'Factura Electrónica - Confirmación de Compra';
+            $mail->Body    = 'Hola, gracias por tu compra en IGNIT. Adjuntamos tu factura electrónica.';
+
+            $mail->send();
+
+            // 4. LIMPIEZA
+            unset($_SESSION['carrito']);
+            header('Location: index.php?action=mis_pedidos&status=success');
+            exit();
+
+        } catch (Exception $e) {
+            die("Error en el proceso de pago: " . $e->getMessage());
+        }
+    }
+
+    public function mostrarMisPedidos() {
+        if (!isset($_SESSION['usuario_id'])) {
+            header('Location: index.php?action=login');
+            exit();
+        }
+        $pedidoModel = new PedidoModel();
+        $pedidos = $pedidoModel->obtenerPedidosPorUsuario($_SESSION['usuario_id']);
+        require_once dirname(__DIR__) . '/views/mis_pedidos.php';
     }
 }
