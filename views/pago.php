@@ -1,3 +1,48 @@
+<?php
+// Aseguramos que la sesión esté iniciada
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+
+$total_pago = 0;
+$lista_detallada = [];
+
+// --- LÓGICA DE TARIFA DE ENVÍO DINÁMICA ---
+$pais_usuario = $_SESSION['usuario_pais'] ?? 'Panamá'; 
+$tarifa_envio = 15.00; // Tarifa por defecto si no se encuentra en BD
+
+try {
+    // Asegúrate de que los datos de conexión sean correctos
+    $pdo = new PDO("mysql:host=localhost;dbname=proyecto;charset=utf8", "Eadmin", "12345");
+    $stmt = $pdo->prepare("SELECT tarifa FROM tarifas_envio WHERE pais = ?");
+    $stmt->execute([$pais_usuario]);
+    $resultado = $stmt->fetchColumn();
+    if ($resultado !== false) {
+        $tarifa_envio = (float)$resultado;
+    }
+} catch (PDOException $e) {
+    // Si hay error en BD, se mantiene la tarifa por defecto
+}
+
+if (!empty($_SESSION['carrito'])) {
+    require_once 'models/ProductoModel.php';
+    $pModel = new ProductoModel();
+    foreach ($_SESSION['carrito'] as $id => $cant) {
+        $prod = $pModel->buscarPorId($id);
+        if ($prod) {
+            $subtotal = $prod['precio'] * $cant;
+            $total_pago += $subtotal;
+            $lista_detallada[] = [
+                'id' => $id,
+                'nombre' => $prod['nombre'],
+                'precio' => $prod['precio'],
+                'cantidad' => $cant,
+                'subtotal' => $subtotal
+            ];
+        }
+    }
+}
+
+$gran_total = $total_pago + $tarifa_envio;
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -20,30 +65,63 @@
             <div class="bloque-piloto-asignado">
                 <p class="etiqueta-pago">PILOTO ASIGNADO:</p>
                 <h3 class="nombre-piloto-confirmar">
-                    <?php echo htmlspecialchars($_SESSION['usuario_nombre'] ?? 'Invitado'); ?>
+                    <?php echo htmlspecialchars(($_SESSION['usuario_nombre'] ?? 'Invitado') . ' ' . ($_SESSION['usuario_apellido'] ?? '')); ?>
                 </h3>
+            </div>
+            <div class="bloque-info-envio" style="margin: 20px 0; padding: 15px; background: #222; border-radius: 8px; border-left: 4px solid #e67e22;">
+                <p class="etiqueta-pago" style="margin-bottom: 5px;">ESTO SERÁ ENVIADO Al PAIS:</p>
+                <p style="color: #fff; font-weight: bold; font-size: 1.1em; margin: 0;">
+                    <?php echo htmlspecialchars($_SESSION['usuario_pais'] ?? 'País no especificado'); ?>
+                </p>
+            </div>
+            <div class="bloque-info-envio" style="margin: 20px 0; padding: 15px; background: #222; border-radius: 8px; border-left: 4px solid #e67e22;">
+                <p class="etiqueta-pago" style="margin-bottom: 5px;">CON LA DIRECCION:</p>
+                <p style="color: #fff; font-weight: bold; font-size: 1.1em; margin: 0;">
+                    <?php echo htmlspecialchars($_SESSION['usuario_direccion'] ?? 'Dirección no especificada'); ?>
+                </p>
+            </div>
+
+            <div class="bloque-lista-componentes" style="margin-bottom: 20px;">
+                <p class="etiqueta-pago">COMPONENTES DEL BOX:</p>
+                <?php foreach ($lista_detallada as $item): ?>
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #333;">
+                        <div style="display: flex; align-items: center;">
+                            <img src="assets/img/producto/<?php echo $item['id']; ?>.jpeg" onerror="this.src='assets/img/producto/default.jpeg'" style="width: 45px; height: 45px; object-fit: cover; margin-right: 15px;">
+                            <div>
+                                <strong style="display: block;"><?php echo htmlspecialchars($item['nombre']); ?></strong>
+                                <small>Cant: <?php echo $item['cantidad']; ?> | $<?php echo number_format($item['precio'], 2); ?> c/u</small>
+                            </div>
+                        </div>
+                        <span class="valor-resaltado-blanco">$<?php echo number_format($item['subtotal'], 2); ?></span>
+                    </div>
+                <?php endforeach; ?>
             </div>
 
             <div class="bloque-resumen-totales">
                 <p class="etiqueta-pago">RESUMEN DE CARGA:</p>
                 
                 <div class="fila-pago-desglose">
-                    <span>Total de Componentes:</span>
-                    <span class="valor-resaltado-blanco">
-                        <?php echo isset($_SESSION['carrito']) ? array_sum($_SESSION['carrito']) : 0; ?> uds
-                    </span>
+                    <span>Subtotal Componentes:</span>
+                    <span class="valor-resaltado-blanco">$<?php echo number_format($total_pago, 2); ?></span>
+                </div>
+
+                <div class="fila-pago-desglose">
+                    <span>Envío a <?php echo htmlspecialchars($pais_usuario); ?>:</span>
+                    <span class="valor-resaltado-blanco">$<?php echo number_format($tarifa_envio, 2); ?></span>
                 </div>
                 
                 <div class="fila-pago-desglose fila-total-final">
                     <span>Total a Liquidar:</span>
-                    <span class="precio-total-naranja">
-                        $<?php echo number_format($total_pago ?? 0, 2); ?>
-                    </span>
+                    <span class="precio-total-naranja">$<?php echo number_format($gran_total, 2); ?></span>
                 </div>
             </div>
 
             <form action="index.php?action=finalizar_orden" method="POST" class="formulario-pago-tarjeta">
+                <input type="hidden" name="tarifa_envio" value="<?php echo $tarifa_envio; ?>">
+                <input type="hidden" name="total_final" value="<?php echo $gran_total; ?>">
                 
+                
+
                 <p class="etiqueta-pago">MÉTODO DE PAGO:</p>
 
                 <div class="grupo-campo-pago">

@@ -45,24 +45,29 @@
                             <?php 
                             $total_general = 0;
                             foreach ($productos_carrito as $item): 
-                                $subtotal = $item['precio'] * $item['cantidad'];
+                                // Forzamos conversión a numérico para asegurar el cálculo
+                                $precio = isset($item['precio']) ? (float)$item['precio'] : 0.00;
+                                $cantidad = isset($item['cantidad']) ? (int)$item['cantidad'] : 0;
+                                $subtotal = $precio * $cantidad;
                                 $total_general += $subtotal;
                             ?>
                                 <tr>
                                     <td class="td-producto">
                                         <div class="mini-img">
-                                            <img src="assets/img/producto/<?php echo $item['id']; ?>.jpeg" alt="Componente">
+                                            <img src="assets/img/producto/<?php echo $item['id']; ?>.jpeg" 
+                                                 onerror="this.src='assets/img/producto/default.jpeg'" 
+                                                 alt="Componente">
                                         </div>
                                         <div>
-                                            <span class="cat-tabla"><?php echo htmlspecialchars($item['categoria']); ?></span>
-                                            <h4 class="nom-tabla"><?php echo htmlspecialchars($item['nombre']); ?></h4>
+                                            <span class="cat-tabla"><?php echo htmlspecialchars((string)($item['categoria'] ?? 'Sin categoría')); ?></span>
+                                            <h4 class="nom-tabla"><?php echo htmlspecialchars((string)($item['nombre'] ?? 'Producto')); ?></h4>
                                         </div>
                                     </td>
-                                    <td>$<?php echo number_format($item['precio'], 2); ?></td>
+                                    <td>$<?php echo number_format($precio, 2); ?></td>
                                     <td>
                                         <div class="control-cantidad">
                                             <a href="index.php?action=actualizar_cantidad&id=<?php echo $item['id']; ?>&operacion=restar" class="btn-cant">-</a>
-                                            <span class="num-cant"><?php echo $item['cantidad']; ?></span>
+                                            <span class="num-cant"><?php echo $cantidad; ?></span>
                                             <a href="index.php?action=actualizar_cantidad&id=<?php echo $item['id']; ?>&operacion=sumar" class="btn-cant">+</a>
                                         </div>
                                     </td>

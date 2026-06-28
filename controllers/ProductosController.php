@@ -25,6 +25,45 @@ class ProductosController {
         require_once dirname(__DIR__) . '/views/catalogo.php';
     }
 
+    // --- MÉTODO ACTUALIZADO PARA DETALLE CON RECOMENDACIONES ---
+    public function mostrarDetalle($id) {
+        $productoModel = new ProductoModel();
+        $prod = $productoModel->buscarPorId($id);
+        
+        if (!$prod) {
+            header('Location: index.php?action=catalogo');
+            exit();
+        }
+
+        $producto = [
+            'id' => $prod['id_producto'],
+            'nombre' => $prod['nombre'],
+            'descripcion' => $prod['descripcion'],
+            'categoria' => $prod['nombre_categoria'] ?? 'Sin Categoría',
+            'precio' => $prod['precio'],
+            'stock' => $prod['stock_inventario'],
+            'imagen' => $prod['imagen'] ?? 'default.jpg'
+        ];
+
+        // Obtener productos recomendados (20 al azar, excluyendo el actual)
+        $todos = $productoModel->obtenerTodos();
+        $otros = array_filter($todos, function($p) use ($id) {
+            return $p['id_producto'] != $id;
+        });
+        
+        shuffle($otros);
+        $recomendados = array_map(function($p) {
+            return [
+                'id_producto' => $p['id_producto'],
+                'nombre' => $p['nombre'],
+                'precio' => $p['precio']
+            ];
+        }, array_slice($otros, 0, 20));
+
+        require_once dirname(__DIR__) . '/views/detalle_producto.php';
+    }
+    // -----------------------------------------------------------
+
     public function mostrarCarrito() {
         $productoModel = new ProductoModel();
         $productos_carrito = [];
@@ -54,14 +93,22 @@ class ProductosController {
         $productoModel = new ProductoModel();
         
         try {
-            // 1. DESCONTAR STOCK
+            $items = [];
             foreach ($_SESSION['carrito'] as $id_producto => $cantidad) {
+                $prod = $productoModel->buscarPorId($id_producto);
+                if ($prod) {
+                    $items[] = [
+                        'nombre'   => $prod['nombre'],
+                        'cantidad' => $cantidad,
+                        'precio'   => $prod['precio']
+                    ];
+                }
+                
                 if (!$productoModel->disminuirStock($id_producto, $cantidad)) {
-                    throw new Exception("Stock insuficiente para el ID: $id_producto");
+                    throw new Exception("Stock insuficiente para el producto ID: $id_producto");
                 }
             }
 
-            // 2. GENERAR PDF - Usamos \ (backslash) para evitar errores del editor
             $options = new \Dompdf\Options();
             $options->set('isHtml5ParserEnabled', true);
             $options->set('isRemoteEnabled', true);
@@ -69,7 +116,6 @@ class ProductosController {
             $dompdf = new \Dompdf\Dompdf($options);
             
             ob_start();
-            $items = $_SESSION['carrito'];
             require dirname(__DIR__) . '/views/factura_template.php'; 
             $html = ob_get_clean();
             
@@ -78,7 +124,6 @@ class ProductosController {
             $dompdf->render();
             $pdfOutput = $dompdf->output();
 
-            // 3. ENVIAR EMAIL
             $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
             $mail->isSMTP();
             $mail->Host       = 'smtp.gmail.com';
@@ -99,7 +144,6 @@ class ProductosController {
 
             $mail->send();
 
-            // 4. LIMPIEZA
             unset($_SESSION['carrito']);
             header('Location: index.php?action=mis_pedidos&status=success');
             exit();

@@ -31,8 +31,32 @@
                     <input type="text" name="apellido" required>
                 </div>
                 <div class="grupo-formulario">
-                    <label>Teléfono (Opcional)</label>
-                    <input type="text" name="telefono">
+                    <label>País de Residencia</label>
+                    <select name="pais" required style="width: 100%; padding: 10px; background: #333; color: white; border: 1px solid #444; border-radius: 4px; margin-top: 5px;">
+                        <option value="Panamá" selected>Panamá</option>
+                        <option value="Costa Rica">Costa Rica</option>
+                        <option value="Colombia">Colombia</option>
+                        <option value="México">México</option>
+                        <option value="España">España</option>
+                        <option value="Argentina">Argentina</option>
+                        <option value="Chile">Chile</option>
+                        <option value="Perú">Perú</option>
+                        <option value="Estados Unidos">Estados Unidos</option>
+                        <option value="Canadá">Canadá</option>
+                        <option value="Brasil">Brasil</option>
+                        <option value="Francia">Francia</option>
+                        <option value="Alemania">Alemania</option>
+                        <option value="Italia">Italia</option>
+                        <option value="Japón">Japón</option>
+                    </select>
+                </div>
+                <div class="grupo-formulario">
+                    <label>Dirección de Entrega</label>
+                    <input type="text" name="direccion" placeholder="Calle, número, ciudad" required>
+                </div>
+                <div class="grupo-formulario">
+                    <label>Teléfono </label>
+                    <input type="text" name="telefono" required>
                 </div>
                 <div class="grupo-formulario">
                     <label>Email</label>
@@ -54,17 +78,16 @@
             title: '¡Correo ya registrado!',
             text: 'Este correo electrónico ya se encuentra vinculado a un piloto en nuestra plataforma.',
             icon: 'warning',
-            background: '#1e1e1e', // Fondo gris carbón de tu estilo
-            color: '#f5f5f7',      // Texto blanco satinado
+            background: '#1e1e1e',
+            color: '#f5f5f7',
             showCancelButton: true,
-            confirmButtonColor: '#e67e22', // Ámbar deportivo de IGNIT
-            cancelButtonColor: '#333333',  // Gris oscuro para cancelar
+            confirmButtonColor: '#e67e22',
+            cancelButtonColor: '#333333',
             confirmButtonText: 'Ir al Login',
             cancelButtonText: 'Corregir Datos',
             heightAuto: false
         }).then((result) => {
             if (result.isConfirmed) {
-                // Redirección limpia al controlador de Login
                 window.location.href = 'index.php?action=login';
             }
         });

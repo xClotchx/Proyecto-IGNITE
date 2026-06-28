@@ -68,9 +68,19 @@
                                         </span>
                                     </td>
                                     <td class="columna-centrada">
-                                        <a href="index.php?action=rastrear_pedido&id=<?php echo $p['id_pedido']; ?>" class="btn-carrito btn-tabla-rastreo">
-                                            <i class="fa-solid fa-satellite-dish"></i> Rastrear
-                                        </a>
+                                        <div style="display: flex; gap: 5px; justify-content: center;">
+                                            <!-- Botón Rastrear -->
+                                            <a href="index.php?action=rastrear_pedido&id=<?php echo $p['id_pedido']; ?>" class="btn-carrito btn-tabla-rastreo">
+                                                <i class="fa-solid fa-satellite-dish"></i> Rastrear
+                                            </a>
+                                            
+                                            <!-- Botón Reembolso (Solo visible si el estado es 'entregado') -->
+                                            <?php if ($p['estado_pedido'] === 'entregado'): ?>
+                                                <a href="index.php?action=solicitar_reembolso&id=<?php echo $p['id_pedido']; ?>" class="btn-carrito btn-tabla-rastreo">
+                                                    Reembolso
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

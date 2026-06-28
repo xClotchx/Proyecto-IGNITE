@@ -69,7 +69,9 @@
                 <?php endforeach; ?>
 
             </div>
-
+            <a href="index.php?action=mis_pedidos" class="btn-carrito btn-checkout-final" style="text-align: center; text-decoration: none; display: block; box-sizing: border-box;">
+                Volver al Pedidos
+            </a>
             <a href="index.php?action=catalogo" class="btn-carrito btn-checkout-final" style="text-align: center; text-decoration: none; display: block; box-sizing: border-box;">
                 Volver al Catálogo
             </a>

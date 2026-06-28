@@ -1089,3 +1089,345 @@ header h1 {
         grid-template-columns: 1fr;
     }
 }
+/* Estilo unificado para selectores */
+select {
+    width: 100%;
+    padding: 12px 15px;
+    background-color: #1e1e1e; /* Mismo tono de fondo que tus cajas */
+    color: #ffffff;
+    border: 1px solid #333;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    appearance: none; /* Elimina la flecha nativa del sistema */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23e67e22%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 15px top 50%;
+    background-size: 12px auto;
+    transition: border 0.3s ease;
+}
+
+select:focus {
+    outline: none;
+    border-color: #e67e22; /* Color naranja de tu marca al hacer clic */
+}
+/* Estilos para el detalle del producto */
+.contenedor-detalle {
+    max-width: 800px;
+    margin: 50px auto;
+    display: flex;
+    gap: 40px;
+    padding: 20px;
+    color: #fff; /* Asumiendo el fondo oscuro de IGNIT */
+}
+
+.imagen-grande img {
+    width: 100%;
+    border-radius: 8px;
+}
+
+.precio-detalle {
+    font-size: 24px;
+    color: #e67e22; /* Color naranja de la marca */
+    font-weight: bold;
+}
+
+.enlace-volver {
+    color: #e67e22;
+    text-decoration: none;
+}
+
+.enlace-volver:hover {
+    text-decoration: underline;
+}
+
+/* Responsividad: Si la pantalla es pequeña, pone la imagen arriba y la info abajo */
+@media (max-width: 768px) {
+    .contenedor-detalle {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+/* El contenedor principal ahora será un bloque normal */
+.contenedor-detalle {
+    max-width: 1000px;
+    margin: 50px auto;
+    display: block; /* Cambiado de flex a block */
+    padding: 20px;
+}
+
+/* Solo la parte superior (imagen + info) será flex */
+.cuerpo-detalle {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 50px; /* Espacio para que los recomendados bajen */
+}
+
+/* Ajuste para que la sección de recomendados ocupe todo el ancho abajo */
+.recomendados {
+    width: 100%;
+    border-top: 2px solid #333;
+    padding-top: 20px;
+}
+
+/* Responsividad para móviles */
+@media (max-width: 768px) {
+    .cuerpo-detalle {
+        flex-direction: column;
+    }
+}
+/* Corrección total para el contador de cantidad */
+.selector-cantidad-ignit {
+    display: inline-flex;
+    align-items: center;
+    background: var(--bg-tarjeta);
+    border: 1px solid var(--borde-sutil);
+    border-radius: 6px;
+    padding: 4px;
+    margin: 15px 0;
+}
+
+.selector-cantidad-ignit input {
+    width: 40px;
+    background: transparent;
+    border: none;
+    color: var(--texto-blanco);
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    outline: none;
+    padding: 5px;
+    /* Eliminar flechas en Chrome, Safari, Edge, Opera */
+    -moz-appearance: textfield;
+}
+
+.selector-cantidad-ignit input::-webkit-outer-spin-button,
+.selector-cantidad-ignit input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.btn-cant-control {
+    background: transparent;
+    border: none;
+    color: var(--texto-blanco);
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+}
+
+.btn-cant-control:hover {
+    background: var(--acento-ignit);
+    color: var(--bg-principal);
+}
+/* 1. Esto elimina el subrayado y fuerza el color blanco en las tarjetas */
+.card a {
+    text-decoration: none !important; /* Quita el subrayado */
+    color: inherit !important;       /* Hereda el color del padre (blanco) */
+}
+
+/* 2. Asegura que el título no sea azul al ser visitado o activo */
+.card a:visited, 
+.card a:hover, 
+.card a:active {
+    color: inherit !important;
+}
+
+/* 3. Asegura que el título y el precio mantengan su color original */
+.card h3 {
+    color: #ffffff !important;
+    margin: 10px 0;
+}
+
+.card .precio {
+    color: #e67e22 !important; /* O el color que uses para precios en tu catálogo */
+    font-weight: bold;
+}
+.footer-ignit {
+    background: #121212;
+    color: #ffffff;
+    padding: 40px 20px;
+    margin-top: 50px;
+    border-top: 2px solid #e67e22; /* Tu color de acento */
+}
+
+.footer-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.footer-col h3, .footer-col h4 {
+    color: #e67e22;
+    margin-bottom: 15px;
+}
+
+.footer-col ul {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-col ul li a {
+    color: #ccc;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.footer-col ul li a:hover {
+    color: #fff;
+}
+
+.footer-bottom {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 0.9rem;
+    color: #666;
+}
+/* Estilos generales para las nuevas secciones */
+.contenedor-nosotros, .contenedor-faq {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    background: #1a1a1a;
+    border-radius: 8px;
+    color: #fff;
+}
+
+.faq-item {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 10px;
+}
+
+.faq-item h3 {
+    color: #e67e22; /* Tu color naranja */
+}
+/* Ajuste del navbar para incluir los nuevos links */
+/* Contenedor principal del Navbar */
+.navbar-ignit {
+    display: flex;
+    align-items: center;
+    padding: 15px 40px;
+    background: #121212;
+    color: #fff;
+}
+
+/* Enlaces centrales */
+.nav-links-center {
+    display: flex;
+    gap: 30px;
+    margin-left: 40px;
+    flex-grow: 1; /* Esto empuja el menu-auth a la derecha */
+}
+
+.nav-links-center a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.3s;
+}
+
+.nav-links-center a:hover {
+    color: #e67e22; /* Color naranja IGNIT */
+}
+
+/* Estilo para el nombre de usuario activo */
+.nombre-usuario-activo {
+    border-bottom: 2px solid #e67e22; /* Subrayado naranja igual que en tus otros elementos */
+    padding-bottom: 2px;
+    cursor: pointer;
+}
+
+/* Asegurar alineación del bloque de usuario */
+.menu-auth {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+/* Estilos para el formulario de Reembolso */
+.contenedor-reembolso {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: #1a1a1a;
+    border-radius: 10px;
+    color: #ffffff;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    border: 1px solid #333;
+}
+
+.form-ignit .form-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-ignit label {
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #ccc;
+}
+
+.input-ignit {
+    padding: 12px;
+    background-color: #262626;
+    border: 1px solid #444;
+    color: white;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.input-file-ignit {
+    padding: 10px;
+    background-color: #262626;
+    border: 1px solid #444;
+    color: #ccc;
+    border-radius: 5px;
+}
+
+.btn-agregar {
+    background-color: #e67e22; /* Color naranja IGNIT */
+    color: white;
+    padding: 15px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+    text-transform: uppercase;
+}
+
+.btn-agregar:hover {
+    background-color: #d35400;
+}
+/* Estilo para el botón de Reembolso en la tabla */
+.btn-carrito btn-tabla-rastreo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px; /* Ajusta este padding para que coincida con el de Rastrear */
+    height: 38px;      /* Fuerza la misma altura que el botón Rastrear */
+    box-sizing: border-box; /* Importante para que el padding no infle el tamaño */
+    background-color: transparent;
+    border: 1px solid #e67e22;
+    color: #e67e22;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 0.85em;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+}
+
+.btn-carrito btn-tabla-rastreo:hover {
+    background-color: #e67e22;
+    color: white;
+}

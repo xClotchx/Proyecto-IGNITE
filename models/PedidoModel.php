@@ -82,4 +82,15 @@ class PedidoModel {
         $stmt->execute([':id_usuario' => $id_usuario]);
         return $stmt->fetchAll();
     }
+    public function obtenerProductosPorPedido($id_pedido) {
+        // Usamos id_producto, que es el nombre correcto que aparece en tu tabla
+        $sql = "SELECT p.id_producto as id, p.nombre 
+                FROM Detalle_Pedido dp 
+                JOIN Productos p ON dp.id_producto = p.id_producto 
+                WHERE dp.id_pedido = :id_pedido";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id_pedido' => $id_pedido]);
+        return $stmt->fetchAll();
+    }
 }

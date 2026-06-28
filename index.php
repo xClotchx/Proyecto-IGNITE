@@ -2,222 +2,179 @@
 // 1. IMPORTANTE: Arrancar la sesión en la primera línea
 session_start();
 
+// Activar visualización de errores
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// 2. Importar controladores y modelos requeridos para el flujo Maestro-Detalle
+// Carga de dependencias
+require_once 'vendor/autoload.php';
 require_once 'controllers/ProductosController.php';
 require_once 'controllers/AuthController.php';
 require_once 'models/ProductoModel.php';
 require_once 'models/PedidoModel.php';
 
-// 3. Capturar la acción que viene por la URL (si no viene nada, por defecto es 'catalogo')
+// 3. Capturar la acción
 $action = $_GET['action'] ?? 'catalogo';
 
-// 4. Instanciar los controladores y modelos necesarios
+// 4. Instanciar controladores y modelos
 $prodController = new ProductosController();
 $authController = new AuthController();
 $productoModel  = new ProductoModel();
 $pedidoModel    = new PedidoModel();
 
-// 5. El enrutador: decide qué archivo o método ejecutar
+// 5. El enrutador
 switch ($action) {
-    case 'login':
-        require_once 'views/login.php';
+    case 'login': require_once 'views/login.php'; break;
+    case 'procesar_login': $authController->iniciarSesion(); break;
+    case 'registro': require_once 'views/registro.php'; break;
+    case 'procesar_registro': $authController->registrarUsuario(); break;
+    case 'logout': $authController->cerrarSesion(); break;
+    case 'politica_reembolsos': require_once 'views/reembolsos.php'; break;
+    case 'editar_perfil': $authController->editarPerfil(); break;
+    case 'procesar_edicion': $authController->procesarEdicion(); break;
+    case 'preguntas_frecuentes': require_once 'views/faq.php'; break;
+    case 'nosotros': require_once 'views/nosotros.php'; break;
+
+    // --- NUEVAS RUTAS DE REEMBOLSO ---
+    case 'solicitar_reembolso':
+        if (!isset($_SESSION['usuario_id'])) { header('Location: index.php?action=login'); exit(); }
+        $id_pedido = isset($_GET['id']) ? intval($_GET['id']) : 0;
+        $pedido = $pedidoModel->obtenerPorId($id_pedido);
+        if (!$pedido || (isset($pedido['id_usuario']) && $pedido['id_usuario'] != $_SESSION['usuario_id'])) {
+            die("Acceso no autorizado.");
+        }
+        $productos_del_pedido = $pedidoModel->obtenerProductosPorPedido($id_pedido);
+        require_once 'views/solicitar_reembolso.php';
         break;
 
-    case 'procesar_login':
-        $authController->iniciarSesion();
+    case 'procesar_solicitud_reembolso':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['evidencia'])) {
+            $upload_dir = 'uploads/reembolsos/';
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+            $file_name = 'reb_' . $_POST['id_pedido'] . '_' . time() . '_' . basename($_FILES['evidencia']['name']);
+            move_uploaded_file($_FILES['evidencia']['tmp_name'], $upload_dir . $file_name);
+            echo "<script>alert('Solicitud enviada correctamente.'); window.location='index.php?action=mis_pedidos';</script>";
+        }
         break;
 
-    case 'registro':
-        require_once 'views/registro.php';
+    case 'ver_detalle':
+        $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+        $prodController->mostrarDetalle($id);
         break;
 
-    case 'procesar_registro':
-        $authController->registrarUsuario();
-        break;
-
-    case 'logout':
-        $authController->cerrarSesion();
-        break;
-
-    // Ruta AJAX que procesa la inserción al carrito sin recargar página
     case 'agregar_carrito':
-        $id_producto = isset($_GET['id']) ? intval($_GET['id']) : 0;
+        header('Content-Type: application/json');
+        $data = json_decode(file_get_contents('php://input'), true);
+        $id_producto = !empty($data) ? (isset($data['id']) ? intval($data['id']) : 0) : (isset($_GET['id']) ? intval($_GET['id']) : 0);
+        $cantidad = !empty($data) ? (isset($data['cantidad']) ? intval($data['cantidad']) : 1) : 1;
 
         if ($id_producto > 0) {
-            if (!isset($_SESSION['carrito'])) {
-                $_SESSION['carrito'] = [];
-            }
-
-            if (isset($_SESSION['carrito'][$id_producto])) {
-                $_SESSION['carrito'][$id_producto]++; 
-            } else {
-                $_SESSION['carrito'][$id_producto] = 1; 
-            }
-
-            $cantidadTotal = array_sum($_SESSION['carrito']);
-
-            header('Content-Type: application/json');
-            echo json_encode([
-                'success' => true,
-                'cantidadTotal' => $cantidadTotal
-            ]);
+            if (!isset($_SESSION['carrito'])) $_SESSION['carrito'] = [];
+            $_SESSION['carrito'][$id_producto] = $cantidad;
+            echo json_encode(['success' => true, 'cantidadTotal' => array_sum($_SESSION['carrito'])]);
         } else {
-            header('Content-Type: application/json');
-            echo json_encode([
-                'success' => false,
-                'error' => 'ID de producto no válido'
-            ]);
+            echo json_encode(['success' => false, 'error' => 'ID inválido']);
         }
-        exit(); 
-        break;
+        exit();
 
-    // ==========================================================================
-    // SECCIÓN: ACCIONES DEL CARRITO DE COMPRAS
-    // ==========================================================================
-    case 'ver_carrito':
-        $prodController->mostrarCarrito();
-        break;
-
+    case 'ver_carrito': $prodController->mostrarCarrito(); break;
+    
     case 'actualizar_cantidad':
         $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-        $operacion = $_GET['operacion'] ?? '';
-
+        $op = $_GET['operacion'] ?? '';
         if ($id > 0 && isset($_SESSION['carrito'][$id])) {
-            if ($operacion === 'sumar') {
-                $_SESSION['carrito'][$id]++;
-            } elseif ($operacion === 'restar') {
+            if ($op === 'sumar') $_SESSION['carrito'][$id]++;
+            elseif ($op === 'restar') {
                 $_SESSION['carrito'][$id]--;
-                if ($_SESSION['carrito'][$id] <= 0) {
-                    unset($_SESSION['carrito'][$id]);
-                }
+                if ($_SESSION['carrito'][$id] <= 0) unset($_SESSION['carrito'][$id]);
             }
         }
         header('Location: index.php?action=ver_carrito');
         exit();
-        break;
 
     case 'eliminar_carrito':
         $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-        
-        if ($id > 0 && isset($_SESSION['carrito'][$id])) {
-            unset($_SESSION['carrito'][$id]);
-        }
+        if ($id > 0) unset($_SESSION['carrito'][$id]);
         header('Location: index.php?action=ver_carrito');
         exit();
-        break;
 
-    // ==========================================================================
-    // SECCIÓN: PROCESAMIENTO DE PAGO (CHECKOUT)
-    // ==========================================================================
     case 'procesar_pago':
-        // Barrera de seguridad: si no hay sesión iniciada, obligar a ir al login
-        if (!isset($_SESSION['usuario_id'])) {
-            header('Location: index.php?action=login');
-            exit();
-        }
-
-        // Si el carrito está vacío, no hay nada que pagar, mandamos al catálogo
-        if (!isset($_SESSION['carrito']) || empty($_SESSION['carrito'])) {
-            header('Location: index.php?action=catalogo');
-            exit();
-        }
-
-        // Calcular el total definitivo desde la base de datos para inyectar a la vista
+        if (!isset($_SESSION['usuario_id'])) { header('Location: index.php?action=login'); exit(); }
+        if (empty($_SESSION['carrito'])) { header('Location: index.php?action=catalogo'); exit(); }
+        
         $total_pago = 0;
-        foreach ($_SESSION['carrito'] as $id_producto => $cantidad) {
-            $prod = $productoModel->buscarPorId($id_producto);
-            if ($prod) {
-                $total_pago += ($prod['precio'] * $cantidad);
-            }
+        foreach ($_SESSION['carrito'] as $id_p => $cant) {
+            $p = $productoModel->buscarPorId($id_p);
+            if ($p) $total_pago += ($p['precio'] * $cant);
         }
-
-        // Cargamos la vista de confirmación inyectándole la variable $total_pago
         require_once 'views/pago.php';
         break;
 
     case 'finalizar_orden':
-        // Validación de seguridad estricta para evitar accesos directos por URL
-        if (!isset($_SESSION['usuario_id']) || !isset($_SESSION['carrito']) || empty($_SESSION['carrito'])) {
+        if (!isset($_SESSION['usuario_id']) || empty($_SESSION['carrito'])) {
             header('Location: index.php?action=catalogo');
             exit();
         }
 
-        // Recibir los datos de la pasarela mediante el método POST
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $nombre_tarjeta = $_POST['nombre_tarjeta'] ?? '';
-            $numero_tarjeta = $_POST['numero_tarjeta'] ?? '';
-            $fecha_vence    = $_POST['fecha_vence'] ?? '';
-            $cvv            = $_POST['cvv'] ?? '';
-        }
-
-        // Calcular el monto total acumulado consultando precios reales en la BD
-        $total_pago = 0;
-        foreach ($_SESSION['carrito'] as $id_producto => $cantidad) {
-            $prod = $productoModel->buscarPorId($id_producto);
-            if ($prod) {
-                $total_pago += ($prod['precio'] * $cantidad);
-            }
-        }
-
         try {
-            $id_usuario = $_SESSION['usuario_id'];
-            $carrito = $_SESSION['carrito'];
+            $direccion_envio = $_POST['direccion'] ?? $_SESSION['usuario_direccion'];
+            $metodo_pago     = $_POST['metodo_pago'] ?? 'Tarjeta';
+            $tarifa_envio    = (float)($_POST['tarifa_envio'] ?? 0);
+            $total_final     = (float)($_POST['total_final'] ?? 0);
 
-            // GUARDAR EN BD: Registramos de golpe las dos tablas ('Pedidos' y 'Detalle_Pedido')
-            $id_pedido_generado = $pedidoModel->registrarPedidoCompleto($id_usuario, $total_pago, $carrito, $productoModel);
+            $id_pedido = $pedidoModel->registrarPedidoCompleto($_SESSION['usuario_id'], $total_final, $_SESSION['carrito'], $productoModel);
 
-            // Vaciamos el carrito de la sesión de forma limpia tras la inserción exitosa
+            $dompdf = new \Dompdf\Dompdf();
+            ob_start();
+            require 'views/factura_template.php'; 
+            $html = ob_get_clean();
+            $dompdf->loadHtml($html);
+            $dompdf->render();
+            $pdfOutput = $dompdf->output();
+
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'clotchproyectos@gmail.com'; 
+            $mail->Password   = 'mknbuhhuiqgojwtr'; 
+            $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+            $mail->CharSet    = 'UTF-8';
+            $mail->setFrom('clotchproyectos@gmail.com', 'IGNIT Performance');
+            $mail->addAddress($_SESSION['usuario_email']); 
+            $mail->addStringAttachment($pdfOutput, 'Factura_IGNIT.pdf', 'base64', 'application/pdf');
+            $mail->isHTML(true);
+            $mail->Subject = 'Factura Electrónica - IGNIT Performance';
+            $mail->Body    = 'Hola ' . $_SESSION['usuario_nombre'] . ', gracias por tu compra.';
+            $mail->send();
+
             unset($_SESSION['carrito']);
-
-            // Redirigimos directamente al sistema de rastreo pasando el ID autoincrementable por parámetro URL
-            header("Location: index.php?action=rastrear_pedido&id=" . $id_pedido_generado);
+            header("Location: index.php?action=rastrear_pedido&id=" . $id_pedido);
             exit();
-
         } catch (Exception $e) {
-            echo "<h3 style='color: #ff5f00; font-family: sans-serif; text-align: center; margin-top: 50px;'>
-                    Error crítico al procesar el despacho en IGNIT PERFORMANCE: " . htmlspecialchars($e->getMessage()) . "
-                  </h3>";
-            exit();
+            die("Error en el despacho: " . $e->getMessage());
         }
-        break;
 
-    // ==========================================================================
-    // SECCIÓN: HISTORIAL Y ESTADO DE PEDIDOS
-    // ==========================================================================
-    case 'mis_pedidos':
-        $prodController->mostrarMisPedidos();
-        break;
+    case 'mis_pedidos': $prodController->mostrarMisPedidos(); break;
 
-    // ==========================================================================
-    // SECCIÓN: SISTEMA DE TELEMETRÍA Y RASTREO
-    // ==========================================================================
     case 'rastrear_pedido':
-        if (!isset($_SESSION['usuario_id'])) {
-            header('Location: index.php?action=login');
-            exit();
-        }
-
-        // Capturar el ID del pedido desde los parámetros de la URL
         $id_pedido = isset($_GET['id']) ? intval($_GET['id']) : 0;
         $pedido = $pedidoModel->obtenerPorId($id_pedido);
-
-        // Control de seguridad: Validar existencia y propiedad del pedido
-        if (!$pedido || $pedido['id_usuario'] != $_SESSION['usuario_id']) {
-            echo "<h3 style='color: #ef4c3c; font-family: sans-serif; text-align: center; margin-top: 50px;'>
-                    Pedido no encontrado o acceso no autorizado a la telemetría.
-                  </h3>";
-            exit();
+        
+        if (!$pedido || (isset($pedido['id_usuario']) && $pedido['id_usuario'] != $_SESSION['usuario_id'])) {
+            die("Acceso no autorizado.");
         }
 
-        // Mapear variables dinámicas para alimentar la vista de la línea de tiempo
-        $codigo_rastreo = "IG-ORD-" . $pedido['id_pedido'];
-        $estado_actual  = $pedido['estado_pedido']; // Traerá 'pendiente', 'preparando', 'en_camino', 'ultima_milla' o 'entregado'
-        $total_pedido   = $pedido['total'];
+        $id_key    = isset($pedido['id_pedido']) ? 'id_pedido' : 'id';
+        $total_key = isset($pedido['monto_total']) ? 'monto_total' : 'total';
+        $est_key   = isset($pedido['status']) ? 'status' : 'estado';
 
+        $codigo_rastreo = "IG-ORD-" . ($pedido[$id_key] ?? '0');
+        $total_pedido   = $pedido[$total_key] ?? 0;
+        $estado_actual  = $pedido[$est_key] ?? 'pendiente';
+        
         require_once 'views/rastreo.php';
         break;
 
