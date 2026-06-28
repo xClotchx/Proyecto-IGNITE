@@ -7,6 +7,7 @@
 </head>
 <body>
     <main class="contenedor-faq">
+        <a href="index.php" class="enlace-volver">← Volver al catálogo</a>
         <h1>Política de Reembolsos y Devoluciones</h1>
         
         <div class="faq-item">

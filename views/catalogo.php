@@ -54,25 +54,29 @@
         <?php if(isset($productos) && count($productos) > 0): ?>
             <?php foreach($productos as $p): ?>
                 <article class="card">
-                    <a href="index.php?action=ver_detalle&id=<?php echo $p['id']; ?>" style="text-decoration: none; color: inherit; display: block;">
-                        <div class="contenedor-img">
-                            <img src="assets/img/producto/<?php echo $p['id']; ?>.jpeg" alt="Producto IGNIT">
-                        </div>
-                        
-                        <div class="info-producto" style="padding: 15px;">
-                            <h3><?php echo htmlspecialchars($p['nombre']); ?></h3>
-                            <p class="precio" style="color: #e67e22; font-weight: bold; font-size: 1.2rem;">
-                                $<?php echo number_format($p['precio'], 2); ?>
-                            </p>
-                        </div>
-                    </a>
-                    
-                    <div class="compra-producto" style="padding: 0 15px 15px 15px;">
-                        <button type="button" class="btn-carrito btn-agregar" data-id="<?php echo $p['id']; ?>">
-                            Añadir al Carrito
-                        </button>
-                    </div>
-                </article>
+        <form action="index.php?action=agregar_carrito" method="POST">
+            <input type="hidden" name="id_producto" value="<?php echo $p['id']; ?>">
+            
+            <a href="index.php?action=ver_detalle&id=<?php echo $p['id']; ?>" style="text-decoration: none; color: inherit; display: block;">
+                <div class="contenedor-img">
+                    <img src="assets/img/producto/<?php echo $p['id']; ?>.jpeg" alt="Producto IGNIT">
+                </div>
+                
+                <div class="info-producto" style="padding: 15px;">
+                    <h3><?php echo htmlspecialchars($p['nombre']); ?></h3>
+                    <p class="precio" style="color: #e67e22; font-weight: bold; font-size: 1.2rem;">
+                        $<?php echo number_format($p['precio'], 2); ?>
+                    </p>
+                </div>
+            </a>
+            
+            <div class="compra-producto" style="padding: 0 15px 15px 15px;">
+            <button type="button" class="btn-carrito btn-agregar btn-agregar-catalogo" data-id="<?php echo $p['id']; ?>">
+        Añadir al Carrito
+            </button>
+            </div>
+        </form>
+    </article>
             <?php endforeach; ?>
         <?php else: ?>
             <p>No hay productos disponibles actualmente.</p>

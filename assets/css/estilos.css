@@ -1431,3 +1431,17 @@ select:focus {
     background-color: #e67e22;
     color: white;
 }
+.badge-pop {
+    animation: pop 0.2s ease-out;
+}
+
+@keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4); color: #e67e22; } /* Crece y destaca el color */
+    100% { transform: scale(1); }
+}
+
+.badge-carrito {
+    transition: all 0.2s ease;
+    display: inline-block;
+}

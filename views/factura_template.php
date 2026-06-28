@@ -1,17 +1,10 @@
 <?php
-// --- SEGURIDAD: Inicializar variable si no existe ---
-if (!isset($datos_factura)) {
-    $datos_factura = [
-        'direccion'    => 'No especificada',
-        'pais'         => 'No especificado', // Nuevo
-        'tarifa_envio' => 0,                 // Nuevo
-        'metodo_pago'  => 'No especificado',
-        'items'        => [],
-        'total_pago'   => 0
-    ];
-}
-// Calculamos el subtotal de productos (sin envío)
-$subtotal_productos = array_sum(array_column($datos_factura['items'], 'subtotal'));
+// Asegurar que las variables existan para el editor y para PHP
+$items_factura = $items_factura ?? [];
+$subtotal_calculado = $subtotal_calculado ?? 0;
+$envio_factura = $envio_factura ?? 0;
+$total_factura = $total_factura ?? 0;
+$id_pedido = $id_pedido ?? 0;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -35,6 +28,11 @@ $subtotal_productos = array_sum(array_column($datos_factura['items'], 'subtotal'
         <h1>IGNIT Performance</h1>
         <p>Factura Electrónica</p>
     </div>
+    
+    <div>
+        <strong>Código de rastreo de pedido:</strong><br>
+        <span>IG-ORD-<?php echo htmlspecialchars($id_pedido ?? '0'); ?></span>
+    </div>
 
     <div class="info-grid">
         <div class="info-col">
@@ -47,9 +45,8 @@ $subtotal_productos = array_sum(array_column($datos_factura['items'], 'subtotal'
         <div class="info-col">
             <div class="info-box">
                 <strong>Detalles del Envío:</strong><br>
-                País de destino: <?php echo htmlspecialchars($datos_factura['pais'] ?? 'No especificado'); ?><br>
-                Dirección de destino: <?php echo htmlspecialchars($datos_factura['direccion']); ?><br>
-                Método de Pago: <?php echo htmlspecialchars($datos_factura['metodo_pago']); ?>
+                País: <?php echo htmlspecialchars($_SESSION['usuario_pais'] ?? 'N/A'); ?><br>
+                Dirección: <?php echo htmlspecialchars($_SESSION['usuario_direccion'] ?? 'N/A'); ?>
             </div>
         </div>
     </div>
@@ -64,7 +61,7 @@ $subtotal_productos = array_sum(array_column($datos_factura['items'], 'subtotal'
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($datos_factura['items'] as $item): ?>
+            <?php foreach ($items_factura as $item): ?>
             <tr>
                 <td><?php echo htmlspecialchars($item['nombre']); ?></td>
                 <td><?php echo $item['cantidad']; ?></td>
@@ -76,9 +73,9 @@ $subtotal_productos = array_sum(array_column($datos_factura['items'], 'subtotal'
     </table>
 
     <div class="total-box">
-        <div>Subtotal Productos: $<?php echo number_format($subtotal_productos, 2); ?></div>
-        <div>Costo de envío: $<?php echo number_format($datos_factura['tarifa_envio'], 2); ?></div>
-        <span>TOTAL PAGADO: $<?php echo number_format($datos_factura['total_pago'], 2); ?></span>
+        <div>Subtotal Productos: $<?php echo number_format($subtotal_calculado, 2); ?></div>
+        <div>Costo de envío: $<?php echo number_format($envio_factura, 2); ?></div>
+        <span>TOTAL PAGADO: $<?php echo number_format($total_factura, 2); ?></span>
     </div>
 </body>
 </html>

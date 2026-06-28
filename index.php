@@ -36,7 +36,6 @@ switch ($action) {
     case 'preguntas_frecuentes': require_once 'views/faq.php'; break;
     case 'nosotros': require_once 'views/nosotros.php'; break;
 
-    // --- NUEVAS RUTAS DE REEMBOLSO ---
     case 'solicitar_reembolso':
         if (!isset($_SESSION['usuario_id'])) { header('Location: index.php?action=login'); exit(); }
         $id_pedido = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -66,15 +65,15 @@ switch ($action) {
     case 'agregar_carrito':
         header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
-        $id_producto = !empty($data) ? (isset($data['id']) ? intval($data['id']) : 0) : (isset($_GET['id']) ? intval($_GET['id']) : 0);
-        $cantidad = !empty($data) ? (isset($data['cantidad']) ? intval($data['cantidad']) : 1) : 1;
+        $id_producto = ($data && isset($data['id'])) ? intval($data['id']) : (isset($_GET['id']) ? intval($_GET['id']) : (isset($_POST['id_producto']) ? intval($_POST['id_producto']) : 0));
+        $cantidad    = ($data && isset($data['cantidad'])) ? intval($data['cantidad']) : 1;
 
         if ($id_producto > 0) {
             if (!isset($_SESSION['carrito'])) $_SESSION['carrito'] = [];
-            $_SESSION['carrito'][$id_producto] = $cantidad;
+            $_SESSION['carrito'][$id_producto] = ($_SESSION['carrito'][$id_producto] ?? 0) + $cantidad;
             echo json_encode(['success' => true, 'cantidadTotal' => array_sum($_SESSION['carrito'])]);
         } else {
-            echo json_encode(['success' => false, 'error' => 'ID inválido']);
+            echo json_encode(['success' => false, 'error' => 'ID recibido: ' . $id_producto]);
         }
         exit();
 
@@ -102,12 +101,6 @@ switch ($action) {
     case 'procesar_pago':
         if (!isset($_SESSION['usuario_id'])) { header('Location: index.php?action=login'); exit(); }
         if (empty($_SESSION['carrito'])) { header('Location: index.php?action=catalogo'); exit(); }
-        
-        $total_pago = 0;
-        foreach ($_SESSION['carrito'] as $id_p => $cant) {
-            $p = $productoModel->buscarPorId($id_p);
-            if ($p) $total_pago += ($p['precio'] * $cant);
-        }
         require_once 'views/pago.php';
         break;
 
@@ -118,21 +111,43 @@ switch ($action) {
         }
 
         try {
-            $direccion_envio = $_POST['direccion'] ?? $_SESSION['usuario_direccion'];
-            $metodo_pago     = $_POST['metodo_pago'] ?? 'Tarjeta';
-            $tarifa_envio    = (float)($_POST['tarifa_envio'] ?? 0);
-            $total_final     = (float)($_POST['total_final'] ?? 0);
+            // 1. Preparar datos para la factura
+            $items_factura = [];
+            $subtotal_calculado = 0;
+            $envio_factura = (float)($_POST['tarifa_envio'] ?? 0);
 
-            $id_pedido = $pedidoModel->registrarPedidoCompleto($_SESSION['usuario_id'], $total_final, $_SESSION['carrito'], $productoModel);
+            foreach ($_SESSION['carrito'] as $id => $cantidad) {
+                $p = $productoModel->buscarPorId($id);
+                if ($p) {
+                    $sub = (float)$p['precio'] * (int)$cantidad;
+                    $items_factura[] = [
+                        'nombre'   => $p['nombre'],
+                        'cantidad' => $cantidad,
+                        'precio'   => (float)$p['precio'],
+                        'subtotal' => $sub
+                    ];
+                    $subtotal_calculado += $sub;
+                }
+            }
+            $total_factura = $subtotal_calculado + $envio_factura;
 
+            // 2. Registrar pedido
+            $id_pedido = $pedidoModel->registrarPedidoCompleto($_SESSION['usuario_id'], $total_factura, $_SESSION['carrito'], $productoModel);
+
+            // 3. Generar PDF
             $dompdf = new \Dompdf\Dompdf();
             ob_start();
+            // Incluimos la vista, las variables $items_factura, $subtotal_calculado, $envio_factura y $total_factura 
+            // ya están definidas arriba y son accesibles aquí.
             require 'views/factura_template.php'; 
             $html = ob_get_clean();
+            
             $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
             $dompdf->render();
             $pdfOutput = $dompdf->output();
 
+            // 4. Enviar correo
             $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
             $mail->isSMTP();
             $mail->Host       = 'smtp.gmail.com';
@@ -150,13 +165,13 @@ switch ($action) {
             $mail->Body    = 'Hola ' . $_SESSION['usuario_nombre'] . ', gracias por tu compra.';
             $mail->send();
 
+            // 5. Limpiar y redirigir
             unset($_SESSION['carrito']);
             header("Location: index.php?action=rastrear_pedido&id=" . $id_pedido);
             exit();
         } catch (Exception $e) {
             die("Error en el despacho: " . $e->getMessage());
         }
-
     case 'mis_pedidos': $prodController->mostrarMisPedidos(); break;
 
     case 'rastrear_pedido':

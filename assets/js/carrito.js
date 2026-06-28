@@ -13,19 +13,14 @@ function agregarAlCarritoConCantidad(idProducto) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // 1. Feedback visual: Cambiar a "¡AGREGADO!"
             if (btnPrincipal) {
                 btnPrincipal.textContent = '¡AGREGADO!';
                 btnPrincipal.style.background = '#27ae60';
-                
-                // Regresa a "Actualizar Carrito" tras 2 segundos
                 setTimeout(() => {
                     btnPrincipal.textContent = 'Actualizar Carrito';
                     btnPrincipal.style.background = '';
                 }, 2000);
             }
-
-            // 2. Actualizar contador del navbar
             const contador = document.getElementById('contador-carrito');
             if (contador) {
                 contador.textContent = data.cantidadTotal;
@@ -37,7 +32,6 @@ function agregarAlCarritoConCantidad(idProducto) {
     .catch(error => console.error('Error IGNIT:', error));
 }
 
-// Función que se dispara con los botones + y -
 function ajustarCantidad(cambio) {
     let input = document.getElementById('cantidad');
     let valor = parseInt(input.value) + cambio;
@@ -45,12 +39,10 @@ function ajustarCantidad(cambio) {
     
     if (valor >= 1 && valor <= max) {
         input.value = valor;
-        
-        // Al ajustar la cantidad, el usuario debe saber que el botón actualizará el carrito
         const btnPrincipal = document.querySelector('.btn-agregar');
         if (btnPrincipal) {
             btnPrincipal.textContent = 'Actualizar Carrito';
-            btnPrincipal.style.background = ''; // Resetea color
+            btnPrincipal.style.background = '';
             btnPrincipal.disabled = false;
         }
     }
@@ -61,9 +53,8 @@ function ajustarCantidad(cambio) {
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
     
-    // --- LÓGICA DE ANIMACIÓN DE PARTÍCULA (CATÁLOGO) ---
-    const botonesAgregar = document.querySelectorAll('.btn-agregar-catalogo'); // Clase específica para el catálogo
-    const iconoCarrito = document.getElementById('icono-carrito');
+    // --- LÓGICA DE ANIMACIÓN (CATÁLOGO) ---
+    const botonesAgregar = document.querySelectorAll('.btn-agregar-catalogo');
     const contadorCarrito = document.getElementById('contador-carrito');
 
     botonesAgregar.forEach(boton => {
@@ -71,15 +62,28 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const productoId = boton.getAttribute('data-id');
             
-            // Llamada GET tradicional para catálogo
+            boton.textContent = 'Añadiendo...';
+            boton.style.opacity = '0.7';
+
             fetch(`index.php?action=agregar_carrito&id=${productoId}`)
                 .then(res => res.json())
                 .then(data => { 
-                    if (data.success && contadorCarrito) {
-                        contadorCarrito.textContent = data.cantidadTotal;
-                        contadorCarrito.classList.add('badge-pop');
-                        setTimeout(() => contadorCarrito.classList.remove('badge-pop'), 200);
+                    if (data.success) {
+                        boton.textContent = '¡Agregado!';
+                        boton.style.opacity = '1';
+                        setTimeout(() => boton.textContent = 'Añadir al Carrito', 2000);
+
+                        if (contadorCarrito) {
+                            contadorCarrito.textContent = data.cantidadTotal;
+                            contadorCarrito.classList.add('badge-pop');
+                            setTimeout(() => contadorCarrito.classList.remove('badge-pop'), 200);
+                        }
                     }
+                })
+                .catch(err => {
+                    console.error('Error al agregar:', err);
+                    boton.textContent = 'Error';
+                    setTimeout(() => boton.textContent = 'Añadir al Carrito', 2000);
                 });
         });
     });
@@ -87,7 +91,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- FILTRADO EN TIEMPO REAL ---
     const buscador = document.getElementById('buscador-productos');
     const tarjetasProductos = document.querySelectorAll('.grid-productos .card');
-
     if (buscador) {
         buscador.addEventListener('input', (e) => {
             const termino = e.target.value.toLowerCase().trim();
@@ -98,16 +101,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- MÁSCARA TARJETA (PAGOS) ---
+    // --- MÁSCARAS Y DETECCIÓN DE TARJETA (PAGOS) ---
     const inputTarjeta = document.getElementById('numero_tarjeta');
+    const iconoFranquicia = document.getElementById('icono-franquicia-dinamico');
+
     if (inputTarjeta) {
         inputTarjeta.addEventListener('input', (e) => {
             let valor = e.target.value.replace(/\D/g, '');
             e.target.value = valor.match(/.{1,4}/g)?.join(' ') || '';
+            
+            // Detección automática de marca
+            if (iconoFranquicia) {
+                if (valor.startsWith('4')) {
+                    iconoFranquicia.className = 'fa-brands fa-cc-visa';
+                    iconoFranquicia.style.color = '#1a1f71';
+                } else if (valor.startsWith('5')) {
+                    iconoFranquicia.className = 'fa-brands fa-cc-mastercard';
+                    iconoFranquicia.style.color = '#eb001b';
+                } else {
+                    iconoFranquicia.className = 'fa-solid fa-credit-card';
+                    iconoFranquicia.style.color = '#fff';
+                }
+            }
         });
     }
 
-    // --- MÁSCARA FECHA VENCIMIENTO ---
     const inputVence = document.getElementById('fecha_vence');
     if (inputVence) {
         inputVence.addEventListener('input', (e) => {

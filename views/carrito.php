@@ -8,24 +8,39 @@
 </head>
 <body>
 
-    <nav class="navbar-ignit">
-        <div class="logo-ignit">
-            <a href="index.php?action=catalogo" style="color: inherit; text-decoration: none;">IGNIT PERFORMANCE</a>
-        </div>
-        
-        <div class="menu-auth">
-            <a href="index.php?action=catalogo" class="link-login">Volver al Catálogo</a>
-            
-            <?php if (isset($_SESSION['usuario_nombre'])): ?>
-                <span class="usuario-logeado">Piloto: <?php echo htmlspecialchars($_SESSION['usuario_nombre']); ?></span>
-                <a href="index.php?action=logout" class="btn-logout">Cerrar Sesión</a>
-            <?php else: ?>
-                <a href="index.php?action=login" class="link-login">Iniciar Sesión</a>
-            <?php endif; ?>
-        </div>
-    </nav>
+   <nav class="navbar-ignit">
+    <div class="logo-ignit">IGNIT PERFORMANCE</div>
+
+    <div class="nav-links-center">
+        <a href="index.php?action=nosotros">Nosotros</a>
+        <a href="index.php?action=preguntas_frecuentes">FAQ</a>
+        <a href="index.php?action=politica_reembolsos">Política de Reembolsos</a>
+    </div>
+    
+    <div class="menu-auth">
+        <a href="index.php?action=ver_carrito" class="enlace-carrito-nav">
+            <div class="contenedor-carrito-nav" id="icono-carrito">
+                <span class="icono-bolsa">🛒</span>
+                <span id="contador-carrito" class="badge-carrito">
+                    <?php echo isset($_SESSION['carrito']) ? array_sum($_SESSION['carrito']) : 0; ?>
+                </span>
+            </div>
+        </a>
+
+        <?php if (isset($_SESSION['usuario_nombre'])): ?>
+            <a href="index.php?action=mis_pedidos" class="link-mis-pedidos">📦 Mis Pedidos</a>
+            <a href="index.php?action=editar_perfil" class="usuario-logeado">
+                <span class="nombre-usuario-activo"><?php echo htmlspecialchars($_SESSION['usuario_nombre']); ?></span>
+            </a>
+        <?php else: ?>
+            <a href="index.php?action=login" class="link-login">Iniciar Sesión</a>
+            <a href="index.php?action=registro" class="btn-registro-nav">Registrarse</a>
+        <?php endif; ?>
+    </div>
+</nav>
 
     <main class="contenedor-carrito-pagina">
+        <a href="index.php" class="enlace-volver">← Volver al catálogo</a>
         <h2>Tu Configuración de Partes</h2>
 
         <?php if (!empty($productos_carrito)): ?>
