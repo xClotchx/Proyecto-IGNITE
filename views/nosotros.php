@@ -6,6 +6,7 @@
 </head>
 <body>
     <main class="contenedor-nosotros">
+        <a href="index.php" class="enlace-volver">← Volver al catálogo</a>
         <h1>Sobre IGNIT Performance</h1>
         <p>Somos apasionados por la ingeniería automotriz. En IGNIT, no solo vendemos piezas; entregamos rendimiento probado para quienes buscan llevar su máquina al límite.</p>
         

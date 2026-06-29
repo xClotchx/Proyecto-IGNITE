@@ -1445,3 +1445,36 @@ select:focus {
     transition: all 0.2s ease;
     display: inline-block;
 }
+#alerta-pago {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 450px;
+    padding: 16px 20px;
+    
+    /* Look Premium */
+    background: rgba(30, 30, 30, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(230, 126, 34, 0.5); /* Color de acento de tu marca */
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    
+    color: #ffffff;
+    font-family: sans-serif;
+    text-align: center;
+    font-weight: 500;
+    font-size: 0.95em;
+    letter-spacing: 0.5px;
+    z-index: 9999;
+    
+    /* Animación suave */
+    animation: slideDown 0.4s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translate(-50%, -20px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}

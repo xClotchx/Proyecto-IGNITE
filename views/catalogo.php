@@ -50,38 +50,47 @@
         </div>
     </div>
 
-    <main class="grid-productos">
-        <?php if(isset($productos) && count($productos) > 0): ?>
-            <?php foreach($productos as $p): ?>
-                <article class="card">
-        <form action="index.php?action=agregar_carrito" method="POST">
-            <input type="hidden" name="id_producto" value="<?php echo $p['id']; ?>">
-            
-            <a href="index.php?action=ver_detalle&id=<?php echo $p['id']; ?>" style="text-decoration: none; color: inherit; display: block;">
-                <div class="contenedor-img">
-                    <img src="assets/img/producto/<?php echo $p['id']; ?>.jpeg" alt="Producto IGNIT">
-                </div>
+   <main class="grid-productos">
+    <?php if(isset($productos) && count($productos) > 0): ?>
+        <?php foreach($productos as $p): ?>
+            <article class="card">
+                <a href="index.php?action=ver_detalle&id=<?php echo $p['id']; ?>" style="text-decoration: none; color: inherit; display: block;">
+                    <div class="contenedor-img">
+                        <?php
+                            $id = $p['id']; // ID correcto
+                            $ruta_base = "assets/img/producto/" . $id;
+                            $extensiones = ['jpeg', 'jpg', 'png', 'webp', 'gif'];
+                            $imagen_final = "assets/img/default.png";
+
+                            foreach ($extensiones as $ext) {
+                                if (file_exists($ruta_base . '.' . $ext)) {
+                                    $imagen_final = $ruta_base . '.' . $ext;
+                                    break;
+                                }
+                            }
+                        ?>
+                        <img src="<?php echo $imagen_final; ?>" alt="<?php echo htmlspecialchars($p['nombre']); ?>">
+                    </div>
+                    
+                    <div class="info-producto" style="padding: 15px;">
+                        <h3><?php echo htmlspecialchars($p['nombre']); ?></h3>
+                        <p class="precio" style="color: #e67e22; font-weight: bold; font-size: 1.2rem;">
+                            $<?php echo number_format($p['precio'], 2); ?>
+                        </p>
+                    </div>
+                </a>
                 
-                <div class="info-producto" style="padding: 15px;">
-                    <h3><?php echo htmlspecialchars($p['nombre']); ?></h3>
-                    <p class="precio" style="color: #e67e22; font-weight: bold; font-size: 1.2rem;">
-                        $<?php echo number_format($p['precio'], 2); ?>
-                    </p>
+                <div class="compra-producto" style="padding: 0 15px 15px 15px;">
+                    <button type="button" class="btn-carrito btn-agregar btn-agregar-catalogo" data-id="<?php echo $p['id']; ?>">
+                        Añadir al Carrito
+                    </button>
                 </div>
-            </a>
-            
-            <div class="compra-producto" style="padding: 0 15px 15px 15px;">
-            <button type="button" class="btn-carrito btn-agregar btn-agregar-catalogo" data-id="<?php echo $p['id']; ?>">
-        Añadir al Carrito
-            </button>
-            </div>
-        </form>
-    </article>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <p>No hay productos disponibles actualmente.</p>
-        <?php endif; ?>
-    </main>
+            </article>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <p>No hay productos disponibles actualmente.</p>
+    <?php endif; ?>
+</main>
     <footer class="footer-ignit">
     <div class="footer-container">
         <div class="footer-col">

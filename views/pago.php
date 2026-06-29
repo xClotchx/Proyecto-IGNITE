@@ -2,15 +2,26 @@
 // Aseguramos que la sesión esté iniciada
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
+// Función auxiliar para obtener la imagen correcta
+function obtenerRutaImagen($id) {
+    $ruta_base = "assets/img/producto/" . $id;
+    $extensiones = ['jpeg', 'jpg', 'png', 'webp', 'gif'];
+    foreach ($extensiones as $ext) {
+        if (file_exists($ruta_base . '.' . $ext)) {
+            return $ruta_base . '.' . $ext;
+        }
+    }
+    return "assets/img/default.png";
+}
+
 $total_pago = 0;
 $lista_detallada = [];
 
 // --- LÓGICA DE TARIFA DE ENVÍO DINÁMICA ---
 $pais_usuario = $_SESSION['usuario_pais'] ?? 'Panamá'; 
-$tarifa_envio = 15.00; // Tarifa por defecto si no se encuentra en BD
+$tarifa_envio = 15.00; 
 
 try {
-    // Asegúrate de que los datos de conexión sean correctos
     $pdo = new PDO("mysql:host=localhost;dbname=proyecto;charset=utf8", "Eadmin", "12345");
     $stmt = $pdo->prepare("SELECT tarifa FROM tarifas_envio WHERE pais = ?");
     $stmt->execute([$pais_usuario]);
@@ -86,7 +97,7 @@ $gran_total = $total_pago + $tarifa_envio;
                 <?php foreach ($lista_detallada as $item): ?>
                     <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #333;">
                         <div style="display: flex; align-items: center;">
-                            <img src="assets/img/producto/<?php echo $item['id']; ?>.jpeg" onerror="this.src='assets/img/producto/default.jpeg'" style="width: 45px; height: 45px; object-fit: cover; margin-right: 15px;">
+                            <img src="<?php echo obtenerRutaImagen($item['id']); ?>" style="width: 45px; height: 45px; object-fit: cover; margin-right: 15px;">
                             <div>
                                 <strong style="display: block;"><?php echo htmlspecialchars($item['nombre']); ?></strong>
                                 <small>Cant: <?php echo $item['cantidad']; ?> | $<?php echo number_format($item['precio'], 2); ?> c/u</small>
@@ -116,12 +127,10 @@ $gran_total = $total_pago + $tarifa_envio;
                 </div>
             </div>
 
-            <form action="index.php?action=finalizar_orden" method="POST" class="formulario-pago-tarjeta">
+            <form id="formulario-pago-tarjeta" class="formulario-pago-tarjeta">
                 <input type="hidden" name="tarifa_envio" value="<?php echo $tarifa_envio; ?>">
                 <input type="hidden" name="total_final" value="<?php echo $gran_total; ?>">
                 
-                
-
                 <p class="etiqueta-pago">MÉTODO DE PAGO:</p>
 
                 <div class="grupo-campo-pago">
@@ -150,15 +159,15 @@ $gran_total = $total_pago + $tarifa_envio;
                     </div>
                 </div>
 
-                <button type="submit" class="btn-carrito btn-checkout-final">
-                    CONFIRMAR Y DESPACHAR PEDIDO
-                </button>
+                <button type="submit" class="btn-carrito btn-checkout-final">CONFIRMAR Y DESPACHAR</button>
             </form>
+
+            <div id="alerta-pago" style="display:none; padding:15px; margin-top:20px; border-radius:5px;"></div>
             
             <a href="index.php?action=ver_carrito" class="enlace-auth link-retorno-box">← Modificar componentes del Box</a>
         </div>
     </main>
-
-    <script src="assets/js/carrito.js"></script>
+<script src="assets/js/carrito.js"></script>
+    
 </body>
 </html>

@@ -4,6 +4,18 @@ if (!isset($recomendados)) { $recomendados = []; }
 if (!isset($producto)) {
     $producto = ['id' => 0, 'nombre' => 'Producto no encontrado', 'precio' => 0, 'descripcion' => '', 'stock' => 0];
 }
+
+// Función auxiliar para obtener la imagen correcta
+function obtenerRutaImagen($id) {
+    $ruta_base = "assets/img/producto/" . $id;
+    $extensiones = ['jpeg', 'jpg', 'png', 'webp', 'gif'];
+    foreach ($extensiones as $ext) {
+        if (file_exists($ruta_base . '.' . $ext)) {
+            return $ruta_base . '.' . $ext;
+        }
+    }
+    return "assets/img/default.png";
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -28,13 +40,11 @@ if (!isset($producto)) {
 
             <?php if (isset($_SESSION['usuario_nombre'])): ?>
                 <a href="index.php?action=mis_pedidos" class="link-mis-pedidos">📦 Mis Pedidos</a>
-                
                 <a href="index.php?action=editar_perfil" class="usuario-logeado" style="text-decoration: none; color: inherit;">
                     <span style="border-bottom: 1px solid #e67e22; cursor: pointer;">
                         <?php echo htmlspecialchars($_SESSION['usuario_nombre']); ?>
                     </span>
                 </a>
-
                 <a href="index.php?action=logout" class="btn-logout">Cerrar Sesión</a>
             <?php else: ?>
                 <a href="index.php?action=login" class="link-login">Iniciar Sesión</a>
@@ -50,7 +60,7 @@ if (!isset($producto)) {
         <br>
         <div class="cuerpo-detalle">
             <div class="imagen-grande">
-                <img src="assets/img/producto/<?php echo $producto['id']; ?>.jpeg" alt="<?php echo $producto['nombre']; ?>">
+                <img src="<?php echo obtenerRutaImagen($producto['id']); ?>" alt="<?php echo $producto['nombre']; ?>">
             </div>
             
             <div class="info-completa">
@@ -75,27 +85,27 @@ if (!isset($producto)) {
         </div>
 
         <section class="contenedor-recomendados-wrapper">
-    <h2 class="titulo-seccion">Productos Recomendados</h2>
-    <div class="grid-productos">
-        <?php if (!empty($recomendados)): ?>
-            <?php foreach($recomendados as $rec): ?>
-                <article class="card">
-                    <a href="index.php?action=ver_detalle&id=<?php echo $rec['id_producto']; ?>">
-                        <div class="contenedor-img">
-                            <img src="assets/img/producto/<?php echo $rec['id_producto']; ?>.jpeg" alt="<?php echo htmlspecialchars($rec['nombre']); ?>">
-                        </div>
-                        <div class="info-card">
-                            <h3><?php echo htmlspecialchars($rec['nombre']); ?></h3>
-                            <p class="precio">$<?php echo number_format($rec['precio'], 2); ?></p>
-                        </div>
-                    </a>
-                </article>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <p>No hay productos recomendados en este momento.</p>
-        <?php endif; ?>
-    </div>
-</section>
+            <h2 class="titulo-seccion">Productos Recomendados</h2>
+            <div class="grid-productos">
+                <?php if (!empty($recomendados)): ?>
+                    <?php foreach($recomendados as $rec): ?>
+                        <article class="card">
+                            <a href="index.php?action=ver_detalle&id=<?php echo $rec['id_producto']; ?>">
+                                <div class="contenedor-img">
+                                    <img src="<?php echo obtenerRutaImagen($rec['id_producto']); ?>" alt="<?php echo htmlspecialchars($rec['nombre']); ?>">
+                                </div>
+                                <div class="info-card">
+                                    <h3><?php echo htmlspecialchars($rec['nombre']); ?></h3>
+                                    <p class="precio">$<?php echo number_format($rec['precio'], 2); ?></p>
+                                </div>
+                            </a>
+                        </article>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <p>No hay productos recomendados en este momento.</p>
+                <?php endif; ?>
+            </div>
+        </section>
     </main>
 
     <script>

@@ -1,29 +1,23 @@
 <?php
-// 1. IMPORTANTE: Arrancar la sesión en la primera línea
+// Si ves esto en pantalla, el router funciona perfecto
 session_start();
 
-// Activar visualización de errores
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-
-// Carga de dependencias
 require_once 'vendor/autoload.php';
 require_once 'controllers/ProductosController.php';
 require_once 'controllers/AuthController.php';
 require_once 'models/ProductoModel.php';
 require_once 'models/PedidoModel.php';
 
-// 3. Capturar la acción
 $action = $_GET['action'] ?? 'catalogo';
 
-// 4. Instanciar controladores y modelos
 $prodController = new ProductosController();
 $authController = new AuthController();
 $productoModel  = new ProductoModel();
 $pedidoModel    = new PedidoModel();
 
-// 5. El enrutador
 switch ($action) {
     case 'login': require_once 'views/login.php'; break;
     case 'procesar_login': $authController->iniciarSesion(); break;
@@ -78,7 +72,7 @@ switch ($action) {
         exit();
 
     case 'ver_carrito': $prodController->mostrarCarrito(); break;
-    
+
     case 'actualizar_cantidad':
         $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
         $op = $_GET['operacion'] ?? '';
@@ -105,96 +99,179 @@ switch ($action) {
         break;
 
     case 'finalizar_orden':
-        if (!isset($_SESSION['usuario_id']) || empty($_SESSION['carrito'])) {
-            header('Location: index.php?action=catalogo');
-            exit();
-        }
+        if (ob_get_length()) ob_end_clean();
+        header('Content-Type: application/json');
 
         try {
-            // 1. Preparar datos para la factura
-            $items_factura = [];
-            $subtotal_calculado = 0;
-            $envio_factura = (float)($_POST['tarifa_envio'] ?? 0);
+            // 0. VERIFICACIÓN DE CAMPOS
+            $campos_requeridos = ['nombre_tarjeta', 'fecha_vence', 'numero_tarjeta', 'cvv', 'total_final'];
+            foreach ($campos_requeridos as $campo) {
+                if (empty($_POST[$campo])) throw new Exception("Campo requerido faltante: $campo");
+            }
 
-            foreach ($_SESSION['carrito'] as $id => $cantidad) {
-                $p = $productoModel->buscarPorId($id);
-                if ($p) {
-                    $sub = (float)$p['precio'] * (int)$cantidad;
-                    $items_factura[] = [
-                        'nombre'   => $p['nombre'],
-                        'cantidad' => $cantidad,
-                        'precio'   => (float)$p['precio'],
-                        'subtotal' => $sub
+            if (!isset($_SESSION['usuario_id']) || empty($_SESSION['carrito'])) {
+                throw new Exception("Sesión expirada o carrito vacío.");
+            }
+
+            // 1. VALIDACIÓN DE FORMATO LOCAL
+            $num_tarjeta    = str_replace(' ', '', $_POST['numero_tarjeta']);
+            $cvv            = trim($_POST['cvv']);
+            $fecha_vence    = trim($_POST['fecha_vence']);
+            $nombre_tarjeta = trim($_POST['nombre_tarjeta']);
+            $monto          = (float)$_POST['total_final'];
+            $tarifa_envio   = (float)($_POST['tarifa_envio'] ?? 0);
+
+            if (!preg_match('/^\d{16}$/', $num_tarjeta)) {
+                throw new Exception("Número de tarjeta inválido. Debe tener 16 dígitos.");
+            }
+            if (!preg_match('/^\d{3,4}$/', $cvv)) {
+                throw new Exception("CVV inválido. Debe tener 3 o 4 dígitos.");
+            }
+            if (!preg_match('/^\d{2}\/\d{2}$/', $fecha_vence)) {
+                throw new Exception("Formato de fecha inválido. Use MM/AA.");
+            }
+            if (empty($nombre_tarjeta)) {
+                throw new Exception("Ingresa el nombre del titular de la tarjeta.");
+            }
+
+            // 2. VALIDACIÓN DIRECTA CON LA BD DEL BANCO
+            try {
+                $pdo_banco = new PDO("mysql:host=localhost;dbname=banco;charset=utf8mb4", "bancoc", "12345");
+                $pdo_banco->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            } catch (PDOException $e) {
+                throw new Exception("No se pudo conectar con el banco.");
+            }
+
+            $stmt = $pdo_banco->prepare("
+                SELECT c.saldo, c.cvv, c.fecha_expiracion, u.nombre, u.apellido
+                FROM Cuentas_Bancarias c
+                JOIN Usuarios u ON c.id_usuario = u.id_usuario
+                WHERE c.numero_tarjeta = ?
+            ");
+            $stmt->execute([$num_tarjeta]);
+            $cuenta_banco = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$cuenta_banco) {
+                throw new Exception("Tarjeta no encontrada en el banco.");
+            }
+            if (trim($cvv) !== trim($cuenta_banco['cvv'])) {
+                throw new Exception("CVV incorrecto.");
+            }
+
+            $partes   = explode('/', trim($fecha_vence));
+            $mes_ing  = (int)$partes[0];
+            $anio_ing = (int)$partes[1];
+            if ($anio_ing < 100) $anio_ing += 2000;
+
+            $partes_bd = explode('/', trim($cuenta_banco['fecha_expiracion']));
+            $mes_bd    = (int)$partes_bd[0];
+            $anio_bd   = (int)$partes_bd[1];
+            if ($anio_bd < 100) $anio_bd += 2000;
+
+            if ($mes_ing !== $mes_bd || $anio_ing !== $anio_bd) {
+                throw new Exception("Fecha de vencimiento incorrecta.");
+            }
+            if ($anio_bd < (int)date('Y') || ($anio_bd === (int)date('Y') && $mes_bd < (int)date('m'))) {
+                throw new Exception("La tarjeta está vencida.");
+            }
+
+            $limpiar = function($str) {
+                $str = mb_strtolower(trim($str), 'UTF-8');
+                $str = preg_replace('/\s+/', ' ', $str);
+                return str_replace(['á','é','í','ó','ú','ü','ñ'], ['a','e','i','o','u','u','n'], $str);
+            };
+
+            if ($limpiar($nombre_tarjeta) !== $limpiar($cuenta_banco['nombre'] . ' ' . $cuenta_banco['apellido'])) {
+                throw new Exception("El nombre del titular no coincide con el registrado en el banco.");
+            }
+            if ((float)$cuenta_banco['saldo'] < $monto) {
+                throw new Exception("Fondos insuficientes. Saldo disponible: $" . number_format($cuenta_banco['saldo'], 2));
+            }
+
+            // Descontar saldo en el banco
+            $pdo_banco->prepare("UPDATE Cuentas_Bancarias SET saldo = saldo - ? WHERE numero_tarjeta = ?")
+                      ->execute([$monto, $num_tarjeta]);
+
+            // 3. REGISTRAR PEDIDO
+            $id_pedido = $pedidoModel->registrarPedidoCompleto($_SESSION['usuario_id'], $monto, $_SESSION['carrito'], $productoModel);
+
+            // 4. PREPARAR VARIABLES PARA LA FACTURA
+            $items_factura      = [];
+            $subtotal_calculado = 0;
+            $envio_factura      = $tarifa_envio;
+
+            foreach ($_SESSION['carrito'] as $id_prod => $cant) {
+                $prod = $productoModel->buscarPorId($id_prod);
+                if ($prod) {
+                    $subtotal_item       = (float)$prod['precio'] * (int)$cant;
+                    $subtotal_calculado += $subtotal_item;
+                    $items_factura[]     = [
+                        'nombre'   => $prod['nombre'],
+                        'cantidad' => $cant,
+                        'precio'   => (float)$prod['precio'],
+                        'subtotal' => $subtotal_item
                     ];
-                    $subtotal_calculado += $sub;
                 }
             }
+
             $total_factura = $subtotal_calculado + $envio_factura;
 
-            // 2. Registrar pedido
-            $id_pedido = $pedidoModel->registrarPedidoCompleto($_SESSION['usuario_id'], $total_factura, $_SESSION['carrito'], $productoModel);
+            // 5. GENERAR PDF Y ENVIAR EMAIL
+            try {
+                $dompdf = new \Dompdf\Dompdf();
+                ob_start();
+                require 'views/factura_template.php';
+                $html = ob_get_clean();
+                $dompdf->loadHtml($html);
+                $dompdf->setPaper('A4', 'portrait');
+                $dompdf->render();
+                $pdfOutput = $dompdf->output();
 
-            // 3. Generar PDF
-            $dompdf = new \Dompdf\Dompdf();
-            ob_start();
-            // Incluimos la vista, las variables $items_factura, $subtotal_calculado, $envio_factura y $total_factura 
-            // ya están definidas arriba y son accesibles aquí.
-            require 'views/factura_template.php'; 
-            $html = ob_get_clean();
-            
-            $dompdf->loadHtml($html);
-            $dompdf->setPaper('A4', 'portrait');
-            $dompdf->render();
-            $pdfOutput = $dompdf->output();
+                $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+                $mail->isSMTP();
+                $mail->Host       = 'smtp.gmail.com';
+                $mail->SMTPAuth   = true;
+                $mail->Username   = 'clotchproyectos@gmail.com';
+                $mail->Password   = 'mknbuhhuiqgojwtr';
+                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = 587;
+                $mail->CharSet    = 'UTF-8';
+                $mail->setFrom('clotchproyectos@gmail.com', 'IGNIT Performance');
+                $mail->addAddress($_SESSION['usuario_email']);
+                $mail->addStringAttachment($pdfOutput, 'Factura_IGNIT.pdf', 'base64', 'application/pdf');
+                $mail->isHTML(true);
+                $mail->Subject = 'Factura Electrónica - IGNIT Performance';
+                $mail->Body    = 'Hola ' . $_SESSION['usuario_nombre'] . ', tu pedido ha sido confirmado.';
+                $mail->send();
+            } catch (Exception $e_mail) {}
 
-            // 4. Enviar correo
-            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-            $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';
-            $mail->SMTPAuth   = true;
-            $mail->Username   = 'clotchproyectos@gmail.com'; 
-            $mail->Password   = 'mknbuhhuiqgojwtr'; 
-            $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
-            $mail->CharSet    = 'UTF-8';
-            $mail->setFrom('clotchproyectos@gmail.com', 'IGNIT Performance');
-            $mail->addAddress($_SESSION['usuario_email']); 
-            $mail->addStringAttachment($pdfOutput, 'Factura_IGNIT.pdf', 'base64', 'application/pdf');
-            $mail->isHTML(true);
-            $mail->Subject = 'Factura Electrónica - IGNIT Performance';
-            $mail->Body    = 'Hola ' . $_SESSION['usuario_nombre'] . ', gracias por tu compra.';
-            $mail->send();
-
-            // 5. Limpiar y redirigir
             unset($_SESSION['carrito']);
-            header("Location: index.php?action=rastrear_pedido&id=" . $id_pedido);
-            exit();
+            echo json_encode(['success' => true, 'redirect' => 'index.php?action=rastrear_pedido&id=' . $id_pedido]);
+
         } catch (Exception $e) {
-            die("Error en el despacho: " . $e->getMessage());
+            echo json_encode(['success' => false, 'mensaje' => $e->getMessage()]);
         }
+        exit();
+
     case 'mis_pedidos': $prodController->mostrarMisPedidos(); break;
 
     case 'rastrear_pedido':
         $id_pedido = isset($_GET['id']) ? intval($_GET['id']) : 0;
         $pedido = $pedidoModel->obtenerPorId($id_pedido);
-        
+
+        // Si el pedido no existe o no pertenece al usuario, redirigimos limpiamente
         if (!$pedido || (isset($pedido['id_usuario']) && $pedido['id_usuario'] != $_SESSION['usuario_id'])) {
-            die("Acceso no autorizado.");
+            header('Location: index.php?action=mis_pedidos');
+            exit();
         }
 
-        $id_key    = isset($pedido['id_pedido']) ? 'id_pedido' : 'id';
-        $total_key = isset($pedido['monto_total']) ? 'monto_total' : 'total';
-        $est_key   = isset($pedido['status']) ? 'status' : 'estado';
-
-        $codigo_rastreo = "IG-ORD-" . ($pedido[$id_key] ?? '0');
-        $total_pedido   = $pedido[$total_key] ?? 0;
-        $estado_actual  = $pedido[$est_key] ?? 'pendiente';
-        
+        $codigo_rastreo = "IG-ORD-" . ($pedido['id_pedido'] ?? '0');
+        $total_pedido   = $pedido['total'] ?? 0;
+        $estado_actual  = $pedido['estado_pedido'] ?? 'pendiente';
         require_once 'views/rastreo.php';
         break;
-
-    case 'catalogo':
-    default:
+        default:
         $prodController->mostrarCatalogo();
         break;
 }
+

@@ -1,3 +1,17 @@
+
+<?php
+// Función auxiliar para obtener la imagen correcta
+function obtenerRutaImagen($id) {
+    $ruta_base = "assets/img/producto/" . $id;
+    $extensiones = ['jpeg', 'jpg', 'png', 'webp', 'gif'];
+    foreach ($extensiones as $ext) {
+        if (file_exists($ruta_base . '.' . $ext)) {
+            return $ruta_base . '.' . $ext;
+        }
+    }
+    return "assets/img/default.png"; // Asegúrate de tener esta imagen de fallback
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -60,7 +74,6 @@
                             <?php 
                             $total_general = 0;
                             foreach ($productos_carrito as $item): 
-                                // Forzamos conversión a numérico para asegurar el cálculo
                                 $precio = isset($item['precio']) ? (float)$item['precio'] : 0.00;
                                 $cantidad = isset($item['cantidad']) ? (int)$item['cantidad'] : 0;
                                 $subtotal = $precio * $cantidad;
@@ -69,9 +82,8 @@
                                 <tr>
                                     <td class="td-producto">
                                         <div class="mini-img">
-                                            <img src="assets/img/producto/<?php echo $item['id']; ?>.jpeg" 
-                                                 onerror="this.src='assets/img/producto/default.jpeg'" 
-                                                 alt="Componente">
+                                            <!-- Aplicación de la lógica de imagen dinámica -->
+                                            <img src="<?php echo obtenerRutaImagen($item['id']); ?>" alt="Componente">
                                         </div>
                                         <div>
                                             <span class="cat-tabla"><?php echo htmlspecialchars((string)($item['categoria'] ?? 'Sin categoría')); ?></span>

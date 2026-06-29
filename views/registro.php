@@ -32,7 +32,7 @@
                 </div>
                 <div class="grupo-formulario">
                     <label>País de Residencia</label>
-                    <select name="pais" required style="width: 100%; padding: 10px; background: #333; color: white; border: 1px solid #444; border-radius: 4px; margin-top: 5px;">
+                    <select name="pais" required >
                         <option value="Panamá" selected>Panamá</option>
                         <option value="Costa Rica">Costa Rica</option>
                         <option value="Colombia">Colombia</option>

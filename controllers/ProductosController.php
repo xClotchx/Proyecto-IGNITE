@@ -1,6 +1,6 @@
 <?php
 // Carga del autoloader de Composer desde la raíz
-require_once dirname(__DIR__) . '/vendor/autoload.php';
+
 
 require_once 'models/ProductoModel.php';
 require_once 'models/PedidoModel.php';

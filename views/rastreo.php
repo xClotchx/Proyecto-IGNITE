@@ -76,7 +76,9 @@
                 Volver al Catálogo
             </a>
         </div>
+        
     </main>
+
 
 </body>
 </html>
